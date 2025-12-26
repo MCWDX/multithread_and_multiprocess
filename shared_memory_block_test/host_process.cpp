@@ -16,7 +16,7 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-constexpr DWORD kBUFSIZE = 256;
+constexpr DWORD kBufSize = 256;
 
 int main() {
     
@@ -32,7 +32,7 @@ int main() {
         NULL,                       //安全属性，使用默认安全属性用NULL
         PAGE_READWRITE,             //对文件映射的权限，如读写，执行，复制等
         0,                          //最大大小的高位值
-        kBUFSIZE,                   //最大大小的低位值
+        kBufSize,                   //最大大小的低位值
         block_name.c_str()          //共享内存区的名字
     );
 
@@ -47,7 +47,7 @@ int main() {
         FILE_MAP_ALL_ACCESS,        //文件访问权限
         0,                          //文件访问的字节偏移量高位值
         0,                          //文件访问的字节偏移量低位值
-        kBUFSIZE                    //映射区的大小
+        kBufSize                    //映射区的大小
     );
 
     if (block_view == NULL) {
@@ -63,7 +63,7 @@ int main() {
 
     if (message.length() >= 1) {
         //length() + 1是因为要把最后那个\0也写入
-        if (memcpy_s(static_cast<void *>(block_view), kBUFSIZE, message.c_str(), message.length() + 1)) {
+        if (memcpy_s(static_cast<void *>(block_view), kBufSize, message.c_str(), message.length() + 1)) {
             cerr << "Failed to copy message to shared memory block" << endl;
         }
         else {
@@ -87,7 +87,7 @@ int main() {
 /*
 输出
 Input name(or u can say it a ID) of shared memory block: MyBlock
-Input string that u wanna put into the shared memory block: Hello there
+Input string that u wanna put into the shared memory block: Hello there. General Kenobi!
 Message copied to shared memory block
 Now sleep for 1 minutes to wait for sub process to read the message
 shared memory block closed

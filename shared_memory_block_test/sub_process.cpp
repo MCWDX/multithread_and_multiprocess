@@ -11,7 +11,7 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-constexpr DWORD kBUFSIZE = 256;
+constexpr DWORD kBufSize = 256;
 
 int main() {
     std::wstring block_name = L"";
@@ -38,7 +38,7 @@ int main() {
         FILE_MAP_READ,
         0,
         0,
-        kBUFSIZE
+        kBufSize
     );
 
     if (block_view == NULL) {
@@ -58,6 +58,6 @@ int main() {
 /*
 输出
 Input the name of shared memory block: MyBlock
-Hello there
+Hello there. General Kenobi!
 请按任意键继续. . .
 */
