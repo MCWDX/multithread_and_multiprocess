@@ -1,3 +1,8 @@
+// reference
+// https://cloud.tencent.com/developer/article/2473528
+// https://blog.csdn.net/weixin_36299472/article/details/148567855
+
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
