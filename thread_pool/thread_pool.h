@@ -11,7 +11,7 @@
 
 class ThreadPool {
 public:
-    ThreadPool(uint32_t thread_count_);
+    ThreadPool(uint32_t thread_count);
     ~ThreadPool();
 
     //禁止复制
@@ -23,7 +23,10 @@ public:
     void stop();
 
     template<typename F, typename... Args>
-    bool addTask(F func, Args&&... args);
+    bool addTask(F&& func, Args&&... args);
+
+    template<typename Func, typename... Args>
+    auto addTaskWithRet(Func&& func, Args&&... args) -> std::shared_ptr<std::future<std::result_of_t<Func(Args...)>>>;
     
 private:
     using Task = std::function<void()>;
@@ -102,7 +105,7 @@ void ThreadPool::stop() {
 }
 
 template<typename F, typename... Args>
-bool ThreadPool::addTask(F func, Args&&... args) {
+bool ThreadPool::addTask(F&& func, Args&&... args) {
     //如果线程池已关闭，或者没开始，返回false代表加入任务失败
     if (is_shutdown_.load() || !is_available_.load()) {
         return false;
@@ -112,11 +115,11 @@ bool ThreadPool::addTask(F func, Args&&... args) {
     //     std::unique_lock<std::mutex> lock(task_q_mutex_);
     //     task_queue_.push(task);
     // }
-    auto task = std::bind(func, std::forward<Args>(args)...);
+    auto task = std::bind(std::forward<F>(func), std::forward<Args>(args)...);
     {
         //防御性编程，参考自训练营“线程池”文档的评论。
         if (is_shutdown_.load()) {
-            throw std::runtime_error();
+            throw std::runtime_error("");
         }
         std::unique_lock<std::mutex> lock(task_q_mutex_);
         task_queue_.push([task] () { task(); });
@@ -155,7 +158,32 @@ void ThreadPool::addThread() {
         }
     };
 
+
     //将线程加入到线程库中
     ptr->ptr = std::make_shared<std::thread>(std::move(func));
     threads_.emplace_back(std::move(ptr));
+}
+
+
+template<typename Func, typename... Args>
+auto ThreadPool::addTaskWithRet(Func&& func, Args&&... args) -> std::shared_ptr<std::future<std::result_of_t<Func(Args...)>>> {
+    if (!is_available_.load()) {
+        std::cout << "Thread pool not launched yet" << std::endl;
+        return nullptr;
+    }
+    if (is_shutdown_.load()) {
+        std::cout << "Thread pool already shutdown" << std::endl;
+        return nullptr;
+    }
+    using ReturnType = std::result_of_t<Func(Args...)>;
+    auto task = 
+        std::make_shared<std::packaged_task<ReturnType()>>(std::bind(std::forward<Func>(func), std::forward<Args>(args)...));
+
+    std::future<ReturnType> res = task->get_future();
+    {
+        std::unique_lock<std::mutex> lock(task_q_mutex_);
+        task_queue_.emplace([task]() { (*task)(); });
+    }
+    task_q_cv_.notify_all();
+    return std::make_shared<std::future<std::result_of_t<Func(Args...)>>>(std::move(res));
 }

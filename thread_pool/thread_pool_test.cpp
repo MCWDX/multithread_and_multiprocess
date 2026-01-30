@@ -12,33 +12,49 @@ using std::endl;
 int main() {
     ThreadPool tp(3);
     tp.start();
-    if ( tp.addTask([] () { cout << "Hello world" << endl; }) ) {
+
+    auto func1 = [] () { cout << "Hello world" << endl; };
+
+    if ( tp.addTask(func1) ) {
         cout << "task added" << endl;
     } else {
         cout << "failed to add task" << endl;
     }
 
-
-    if ( tp.addTask([] () {
+    auto func2 = [] () {
         time_point begin = system_clock::now();
         for (int i = 0; i < 100000; i++) {}
         time_point end = system_clock::now();
         cout << (end - begin).count() << endl;
-    }) ) {
+    };
+
+
+
+    if ( tp.addTask(func2) ) {
         cout << "task added" << endl;
     } else {
         cout << "failed to add task" << endl;
     }
 
-    if ([] (int a, int b) { cout << a + b << endl; }, 3, 5) {
+    auto func3 = [] (int a, int b) { cout << a + b << endl; };
+
+    if ( tp.addTask(func3, 3, 5)) {
         cout << "task added" << endl;
     } else {
         cout << "failed to add task" << endl;
     }
 
-    tp.addTask([] (int a, int b) {
-        cout << a + b << endl;
-    }, 3, 5);
+    auto func4 = [] (int a, int b) {
+        return a + b * a;
+    };
+
+    auto res4 = tp.addTaskWithRet(func4, 10, 2);
+
+    if (res4 == nullptr) {
+        std::cout << "Failed to run task with return" << std::endl;
+    } else {
+        std::cout << res4->get() << std::endl;
+    }
 
     //不sleep一下最后加的那个task经常会没开始就被掐掉
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
